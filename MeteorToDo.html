@@ -5,15 +5,17 @@
 <body>
     <div class="container">
     	<header>
-        	<h1>({{incompleteTasks}}) Places to Visit</h1>
+        	<h1>{{#if incompleteTasksExist}}({{incompleteTasks}}) {{/if}}Places to Visit</h1>
             <label class="hide-completed">
             	<input type="checkbox" checked="{{hideCompleted}}"/>
                 Hide Visited Places
             </label>
             {{> loginButtons}}
+            {{#if currentUser}}
             <form class="new-task">
             	<input type="text" name="text" placeholder="Type the task here..."/>
             </form>
+            {{/if}}
         </header>
         
         <ul>
