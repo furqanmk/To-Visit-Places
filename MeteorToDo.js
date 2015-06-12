@@ -3,13 +3,15 @@
 Tasks = new Mongo.Collection("tasks");
 
 if (Meteor.isClient) {
+	/*============= Subscribes to 'tasks' publication =============*/
+	Meteor.subscribe("tasks");
 	
 	/*============= Configures the app to use Login/Signup =============*/
 	Accounts.ui.config({
 		passwordSignupFields: "USERNAME_ONLY"
 	});
 	
-	/*============= Template Helpers =============*/
+	/*============= Body Template Helpers =============*/
 	Template.body.helpers({
 		tasks: function() {
 			if (Session.get("hideCompleted")) {
@@ -33,6 +35,13 @@ if (Meteor.isClient) {
 			}
 		}
   	});
+
+	/*============= Task Template Helpers =============*/
+	Template.task.helpers({
+		isOwner: function() {
+			return this.owner === Meteor.userId();
+		}
+	});
 	
 	/*============= Reusable Functions =============*/
 	function taskCount() {
@@ -60,6 +69,10 @@ if (Meteor.isClient) {
 		
 		"change .hide-completed input": function(event) {
 			Session.set("hideCompleted", event.target.checked);
+		},
+		
+		"click .toggle-private": function(event) {
+			Meteor.call('setPrivate', this._id, ! this.private);
 		}
 	});
   
@@ -84,10 +97,30 @@ Meteor.methods({
 	},
 	setChecked: function(taskId, setChecked) {
 		Tasks.update(taskId, {$set: {checked: setChecked}});
+	},
+	setPrivate: function(taskId, setToPrivate) {
+		var task = Tasks.findOne(taskId);
+		
+		if (task.owner !== Meteor.userId()) {
+			throw new Meteor.Error("not-authorized");
+		}
+		
+		Tasks.update(taskId, {$set: {private: setToPrivate}});
 	}
 });
 
 if (Meteor.isServer) {
+	
+  /*============= Publishes the 'tasks' publication =============*/
+  Meteor.publish("tasks", function() {
+  	return Tasks.find({
+	$or: [
+		{ private: {$ne: true} },
+		{ owner: this.userId }
+		]
+	});
+  });
+  
   Meteor.startup(function () { 
     // code to run on server at startup
   });
